@@ -26,6 +26,7 @@ recommender = Recommender(
     dataset_path="artifacts/data_original/interactions.csv",
     warm_model_path="artifacts/first_experiment_popular.pkl",
     hot_model_path="artifacts/task3_cropped20_experiment_tfidf_userknn.pkl",
+    offline_rec_flag = False
 )
 
 
