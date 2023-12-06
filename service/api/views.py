@@ -1,7 +1,5 @@
-import zipfile
 from typing import List
 
-import wget
 from fastapi import APIRouter, FastAPI, Request
 from pydantic import BaseModel
 
@@ -18,14 +16,17 @@ class RecoResponse(BaseModel):
 
 router = APIRouter()
 
-wget.download("https://github.com/irsafilo/KION_DATASET/raw/f69775be31fa5779907cf0a92ddedb70037fb5ae/data_original.zip")
-with zipfile.ZipFile("./data_original.zip", "r") as zip_ref:
-    zip_ref.extractall("artifacts")
+# wget.download("https://github.com/irsafilo/KION_DATASET/raw/f69775be31fa5779907cf0a92ddedb70037fb5ae/data_original.zip")
+# with zipfile.ZipFile("./data_original.zip", "r") as zip_ref:
+#     zip_ref.extractall("artifacts")
 
 recommender = Recommender(
     dataset_path="artifacts/data_original/interactions.csv",
+    users_path="artifacts/data_original/users.csv",
+    items_path="artifacts/data_original/items.csv",
     warm_model_path="artifacts/first_experiment_popular.pkl",
-    hot_model_path="artifacts/task3_cropped20_experiment_tfidf_userknn.pkl",
+    hot_model_path="artifacts/task4_cropped5_experiment_LightFM.pkl",
+    offline_rec_flag=False,
 )
 
 
