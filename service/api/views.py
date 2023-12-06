@@ -1,7 +1,5 @@
-import zipfile
 from typing import List
 
-import wget
 from fastapi import APIRouter, FastAPI, Request
 from pydantic import BaseModel
 
@@ -28,7 +26,7 @@ recommender = Recommender(
     items_path="artifacts/data_original/items.csv",
     warm_model_path="artifacts/first_experiment_popular.pkl",
     hot_model_path="artifacts/task4_cropped5_experiment_LightFM.pkl",
-    offline_rec_flag = False
+    offline_rec_flag=False,
 )
 
 

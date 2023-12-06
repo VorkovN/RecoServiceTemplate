@@ -3,22 +3,32 @@ import pickle
 import pandas as pd
 from rectools import Columns
 from rectools.dataset import Dataset
+
 from service.api.constants import MAX_USER_COUNT
 
+
 class Recommender:
-    def __init__(self, dataset_path: str, users_path: str, items_path: str, warm_model_path: str, hot_model_path: str, offline_rec_flag: bool):
+    def __init__(
+        self,
+        dataset_path: str,
+        users_path: str,
+        items_path: str,
+        warm_model_path: str,
+        hot_model_path: str,
+        offline_rec_flag: bool,
+    ):
         # Десереализуем датасет
         self.offline_rec_flag = offline_rec_flag
         users = pd.read_csv(users_path)
         items = pd.read_csv(items_path)
         self.interactions = pd.read_csv(dataset_path)
-        self.interactions.rename(
-            columns={"last_watch_dt": Columns.Datetime,
-                     "total_dur": Columns.Weight}, inplace=True)
+        self.interactions.rename(columns={"last_watch_dt": Columns.Datetime, "total_dur": Columns.Weight}, inplace=True)
         self.dataset = Dataset.construct(self.interactions)
 
         # Выбираем самое популярное
-        items_ids_all = self.interactions.groupby(Columns.Item)[Columns.User].nunique().reset_index(name="unique_users_count")
+        items_ids_all = (
+            self.interactions.groupby(Columns.Item)[Columns.User].nunique().reset_index(name="unique_users_count")
+        )
         self.popular_items = items_ids_all.sort_values(by="unique_users_count", ascending=False).head(10)[Columns.Item]
 
         # Запоминаем отсутствующих юзеров
@@ -27,19 +37,17 @@ class Recommender:
         # Сохраняем список горячих юзеров
         interactions_df = self.interactions
 
-        user_ids_all = interactions_df.groupby(Columns.User)[
-            Columns.Item].nunique().reset_index(name='unique_items_count')
-        hot_users = user_ids_all[user_ids_all['unique_items_count'] > 5][
-            Columns.User]
-        interactions_df_hot_users = interactions_df[
-            interactions_df[Columns.User].isin(hot_users)]
+        user_ids_all = (
+            interactions_df.groupby(Columns.User)[Columns.Item].nunique().reset_index(name="unique_items_count")
+        )
+        hot_users = user_ids_all[user_ids_all["unique_items_count"] > 5][Columns.User]
+        interactions_df_hot_users = interactions_df[interactions_df[Columns.User].isin(hot_users)]
 
-        users = users[
-            users[Columns.User].isin(interactions_df_hot_users[Columns.User])]
+        users = users[users[Columns.User].isin(interactions_df_hot_users[Columns.User])]
         interactions_df_hot_users = interactions_df_hot_users[
-            interactions_df_hot_users[Columns.User].isin(users[Columns.User])]
-        items = items[
-            items[Columns.Item].isin(interactions_df_hot_users[Columns.Item])]
+            interactions_df_hot_users[Columns.User].isin(users[Columns.User])
+        ]
+        items = items[items[Columns.Item].isin(interactions_df_hot_users[Columns.Item])]
 
         self.interactions = interactions_df_hot_users
 
@@ -52,7 +60,7 @@ class Recommender:
         user_features = pd.concat(user_features_frames)
         user_features.head()
 
-        items["genre"] = items["genres"].str.lower().str.replace(", ", ",",regex=False).str.split(",")
+        items["genre"] = items["genres"].str.lower().str.replace(", ", ",", regex=False).str.split(",")
         genre_feature = items[["item_id", "genre"]].explode("genre")
         genre_feature.columns = ["id", "value"]
         genre_feature["feature"] = "genre"
@@ -84,15 +92,17 @@ class Recommender:
 
         print("Models loaded")
 
-        if self.offline_rec_flag == True:
-            df_hot = pd.DataFrame({Columns.User:
-            self.interactions[self.interactions[Columns.User].isin(self.hot_users)][Columns.User]})
+        if self.offline_rec_flag:
+            df_hot = pd.DataFrame(
+                {Columns.User: self.interactions[self.interactions[Columns.User].isin(hot_users)][Columns.User]}
+            )
             self.recos_hot = self.hot_model.predict(df_hot)
 
             print("Hot recos predicted")
 
-            df_warm = self.interactions[
-            ~self.interactions[Columns.User].isin(df_hot[Columns.User])].drop_duplicates(subset=Columns.User)
+            df_warm = self.interactions[~self.interactions[Columns.User].isin(df_hot[Columns.User])].drop_duplicates(
+                subset=Columns.User
+            )
             self.recos_warm = self.warm_model.recommend(
                 users=df_warm[Columns.User],
                 dataset=self.dataset,
@@ -109,8 +119,7 @@ class Recommender:
     def recommend(self, user_id: int, k_recs: int):
         # Горячий
         if self.interactions[Columns.User].isin([user_id]).any():
-
-            if self.offline_rec_flag == True:
+            if self.offline_rec_flag:
                 recos = self.recos_hot[self.recos_hot[Columns.User].isin([user_id])][Columns.Item]
             else:
                 print(user_id)
@@ -121,7 +130,7 @@ class Recommender:
 
         # Теплый
         if user_id not in self.missing_user_id_values:
-            if self.offline_rec_flag == True:
+            if self.offline_rec_flag:
                 recos = self.recos_warm[self.recos_warm[Columns.User].isin([user_id])][Columns.Item]
             else:
                 recos = self.popular_items
