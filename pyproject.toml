@@ -24,7 +24,7 @@ jupyter = "^1.0.0"
 wget = "^3.2"
 rectools = {extras = ["lightfm"], version = "^0.4.2"}
 optuna = "^3.4.0"
-lightfm = "^1.17"
+lightfm = "1.17"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "7.4.3"
